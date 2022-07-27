@@ -1,4 +1,5 @@
 # Сохраним в переменную hi строку "Hello world!"
 string hi "Hello world!"
+
 # Выведем содержимое переменной hi 
 echo hi
