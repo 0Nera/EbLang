@@ -15,5 +15,5 @@ echo:hi
 Запуск примеров:
 
 ```bash
-eblang hello.ebls
+python3 eblang.py examples/hello.ebls
 ```
