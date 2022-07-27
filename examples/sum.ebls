@@ -13,4 +13,4 @@ int:result,0
 sum:result,x,y
 
 # 15
-echo,result
+echo:result
