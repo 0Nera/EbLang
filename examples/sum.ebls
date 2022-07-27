@@ -1,0 +1,16 @@
+# Сложение двух чисел и вывод результата
+
+# x = 10
+int x 10
+
+# y = 10
+int y 5
+
+# result = 0
+int result 0
+
+# result = x + y
+sum result, x, y
+
+# 15
+echo result
