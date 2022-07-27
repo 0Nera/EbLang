@@ -6,9 +6,10 @@ EbLang или Ъ2. Новый язык программирования напр
 
 ```EbLang
 # Сохраним в переменную hi строку "Hello world!"
-string hi "Hello world!"
+string:hi,Hello world!
+
 # Выведем содержимое переменной hi 
-echo hi
+echo:hi
 ```
 
 Запуск примеров:
