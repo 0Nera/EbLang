@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os, sys
 
 
@@ -110,7 +111,7 @@ def execute(command, param1 = None, param2 = None, param3 = None):
 
 # Парсинг
 def parse(file):
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf-8")
     programm_raw = []
 
     while True:
@@ -151,7 +152,7 @@ def analyze(data):
         elif i[0] == 'meminfo':
             print(memory)
         elif i[0] == 'quine':
-            f = open(file_ptr, "r")
+            f = open(file_ptr, "r", encoding="utf-8")
             print(f.read())
             f.close
         elif i[0] == 'suicide':
