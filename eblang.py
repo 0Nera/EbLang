@@ -12,6 +12,25 @@ memory = {
 line_ptr = 0
 file_ptr = ""
 
+
+# Выключение устройства
+def suicide():
+    if sys.platform == "linux" or sys.platform == "linux2":
+        # linux
+        print("sudo Shutdown PC, please")
+        os.system("shutdown now -h")
+        os.system('systemctl poweroff') 
+    elif sys.platform == "darwin":
+        # OS X
+        print(":/ shutdown your computer manualy, rich bitch!")
+    elif sys.platform == "win32" or sys.platform == "win64":
+        # windows
+        print("Shutdown PC, please")
+        os.system("shutdown /s /t 1")
+    else:
+        err(f"Платформа {sys.platform} не поддерживается")
+
+
 # В случае ошибки - аварийный дамп память 
 def err(message):
     print(f"ERROR:{message}")
@@ -65,16 +84,28 @@ def execute(command, param1 = None, param2 = None, param3 = None):
                     ))
     elif command == 4:  # sum
         if param1 in memory.keys() and param2 in memory.keys() and param3 in memory.keys():
-            if memory.get(param1)['type'] == "int" and memory.get(param2)['type'] == "int" and memory.get(param3)['type'] == "int":
-                print(
-                    param1,     # Имя переменной
-                    param2      # Данные переменной
-                    )
-                memory.get(param1)['data'] = param2
+            if memory.get(param1)['type'] == "int" and \
+              memory.get(param2)['type'] == "int" and \
+              memory.get(param3)['type'] == "int":
+                # param1 = param2 +  param3
+                memory.get(param1)['data'] = int(memory.get(param2)['data']) + \
+                    int(memory.get(param3)['data'])
             else:
-                err(f"Типы данных не соответствуют: {memory.get(param1)['type']} и {memory.get(param2)['type']}")
+                err(f"Типы данных не соответствуют: {memory.get(param1)['type']}, {memory.get(param2)['type']}, {memory.get(param3)['type']}")
         else:
-            err(f"Переменные не найдены: {param1} и {param2}")
+            err(f"Переменные не найдены: {param1}, {param2}, {param3}")
+    elif command == 5:  # sub
+        if param1 in memory.keys() and param2 in memory.keys() and param3 in memory.keys():
+            if memory.get(param1)['type'] == "int" and \
+              memory.get(param2)['type'] == "int" and \
+              memory.get(param3)['type'] == "int":
+                # param1 = param2 - param3
+                memory.get(param1)['data'] = int(memory.get(param2)['data']) - \
+                    int(memory.get(param3)['data'])
+            else:
+                err(f"Типы данных не соответствуют: {memory.get(param1)['type']}, {memory.get(param2)['type']}, {memory.get(param3)['type']}")
+        else:
+            err(f"Переменные не найдены: {param1}, {param2}, {param3}")
 
 
 # Парсинг
@@ -114,13 +145,17 @@ def analyze(data):
         elif i[0] == 'int':
             execute(3, i[1].split(',')[0], i[1].split(',')[1])
         elif i[0] == 'sum':
-            execute(4, i[1].split(',')[0], i[1].split(',')[1], i[1].split(',')[0])
+            execute(4, i[1].split(',')[0], i[1].split(',')[1], i[1].split(',')[2])
+        elif i[0] == 'sub':
+            execute(5, i[1].split(',')[0], i[1].split(',')[1], i[1].split(',')[2])
+        elif i[0] == 'meminfo':
+            print(memory)
         elif i[0] == 'quine':
             f = open(file_ptr, "r")
             print(f.read())
             f.close
-        elif i[0] == 'meminfo':
-            print(memory)
+        elif i[0] == 'suicide':
+            suicide()
         else:
             err(f"Инструкция: {i[0]}, не распознанна")
 
