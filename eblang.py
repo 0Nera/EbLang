@@ -10,7 +10,7 @@ memory = {
 }
 
 line_ptr = 0
-
+file_ptr = ""
 
 # В случае ошибки - аварийный дамп память 
 def err(message):
@@ -115,6 +115,10 @@ def analyze(data):
             execute(3, i[1].split(',')[0], i[1].split(',')[1])
         elif i[0] == 'sum':
             execute(4, i[1].split(',')[0], i[1].split(',')[1], i[1].split(',')[0])
+        elif i[0] == 'quine':
+            f = open(file_ptr, "r")
+            print(f.read())
+            f.close
         elif i[0] == 'meminfo':
             print(memory)
         else:
@@ -125,4 +129,5 @@ def analyze(data):
 if __name__ == '__main__':
     if len(sys.argv) > 1:
         for i in range(1, len(sys.argv)):
-            analyze(parse(sys.argv[i]))
+            file_ptr = sys.argv[i]
+            analyze(parse(file_ptr))
