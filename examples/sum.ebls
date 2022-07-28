@@ -8,7 +8,7 @@ int:y,5
 
 # result = 0
 int:result,0
-
+meminfo
 # result = x + y
 sum:result,x,y
 
