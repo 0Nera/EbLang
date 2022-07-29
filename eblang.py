@@ -14,6 +14,35 @@ line_ptr = 0
 file_ptr = ""
 
 
+def bottle_or_bottles(num_bottles):
+    if num_bottles != 1:
+        return "bottles"
+    return "bottle"
+
+
+def song1(num_bottles=99):
+    verse1 = "{0} {1} of beer on the wall, {0} {1} of beer."
+    verse2 = "Take one down and pass it around, {} {} of beer on the wall"
+
+    for i in range(num_bottles, 0, -1):
+        # Первая часть
+        print(verse1.format(i, bottle_or_bottles(i)))
+        # Вторая часть
+        num_bottles_next = i - 1
+        if num_bottles_next == 0:
+            num_bottles_next = "no more"
+        print(verse2.format(num_bottles_next,
+                bottle_or_bottles(num_bottles_next)))
+
+    print("No more bottles of beer on the wall, no more bottles of beer.\n" \
+           "Go to the store and buy some more, {} bottles of beer on " \
+            "the wall".format(num_bottles))
+
+
+def _99bottles():
+    song1()
+
+
 # Выключение устройства
 def suicide():
     if sys.platform == "linux" or sys.platform == "linux2":
@@ -107,6 +136,14 @@ def execute(command, param1 = None, param2 = None, param3 = None):
                 err(f"Типы данных не соответствуют: {memory.get(param1)['type']}, {memory.get(param2)['type']}, {memory.get(param3)['type']}")
         else:
             err(f"Переменные не найдены: {param1}, {param2}, {param3}")
+    elif command == 10:  # HQ9+
+        for i in param1:
+            if i == 'H':
+                print("Hello World!")
+            elif i == 'Q':
+                print(param1)
+            elif i == '9':
+                print(_99bottles())
 
 
 # Парсинг
@@ -149,6 +186,8 @@ def analyze(data):
             execute(4, i[1].split(',')[0], i[1].split(',')[1], i[1].split(',')[2])
         elif i[0] == 'sub':
             execute(5, i[1].split(',')[0], i[1].split(',')[1], i[1].split(',')[2])
+        elif i[0] == 'HQ9':
+            execute(10, i[1])
         elif i[0] == 'meminfo':
             print(memory)
         elif i[0] == 'quine':
