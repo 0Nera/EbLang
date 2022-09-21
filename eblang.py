@@ -1,8 +1,19 @@
 # -*- coding: utf-8 -*-
-import os, sys
+import os
+import sys
+from enum import Enum, auto
 
 
-# Память в режиме интерпритации - словарь из переменных
+class OpCode(Enum):
+    ECHO_VAR = auto()  # Вывести переменную из памяти.
+    STORE_STRING = auto()  # Сохранить строку в память.
+    STORE_INTEGER = auto()  # Положить число в память.
+    MATH_SUM_VARS = auto()  # Сложить три числовых переменных.
+    MATH_SUB_VARS = auto()  # Вычесть три числовых переменных.
+    H9QP = auto()  # ...
+
+
+# Память в режиме интерпретации - словарь из переменных
 memory = {"__name__": {"type": "const_str", "data": str(__name__)}}
 
 line_ptr = 0
@@ -67,10 +78,10 @@ def err(message):
 
 # Выполнение команд с аргументами
 def execute(command, param1=None, param2=None, param3=None):
-    if command == 1:  # echo
+    if command == OpCode.ECHO_VAR:
         if param1 in memory.keys():
             print(memory.get(param1)["data"])
-    elif command == 2:  # string
+    elif command == OpCode.STORE_STRING:
         if param1 in memory.keys():
             if memory.get(param1)["type"] == "str":
                 print(param1, param2)  # Имя переменной  # Данные переменной
@@ -79,7 +90,7 @@ def execute(command, param1=None, param2=None, param3=None):
                 err(f"Типы данных не соответствуют: {param2}[{type(param2)}] и string")
         else:
             memory.update(dict.fromkeys([param1], {"type": "str", "data": param2}))
-    elif command == 3:  # int
+    elif command == OpCode.STORE_INTEGER:
         if param1 in memory.keys():
             if memory.get(param1)["type"] == "int":
                 print(param1, param2)  # Имя переменной  # Данные переменной
@@ -88,7 +99,7 @@ def execute(command, param1=None, param2=None, param3=None):
                 err(f"Типы данных не соответствуют: {param2}[{type(param2)}] и int")
         else:
             memory.update(dict.fromkeys([param1], {"type": "int", "data": param2}))
-    elif command == 4:  # sum
+    elif command == OpCode.MATH_SUM_VARS:
         if (
             param1 in memory.keys()
             and param2 in memory.keys()
@@ -109,7 +120,7 @@ def execute(command, param1=None, param2=None, param3=None):
                 )
         else:
             err(f"Переменные не найдены: {param1}, {param2}, {param3}")
-    elif command == 5:  # sub
+    elif command == OpCode.MATH_SUB_VARS:
         if (
             param1 in memory.keys()
             and param2 in memory.keys()
@@ -130,7 +141,7 @@ def execute(command, param1=None, param2=None, param3=None):
                 )
         else:
             err(f"Переменные не найдены: {param1}, {param2}, {param3}")
-    elif command == 10:  # HQ9+
+    elif command == OpCode.H9QP:
         for i in param1:
             if i == "H":
                 print("Hello World!")
@@ -168,30 +179,39 @@ def parse(file):
 # Анализ команд
 def analyze(data):
     for i in data:
-        command = -1
-
-        if i[0] == "echo":
-            execute(1, i[1])
-        elif i[0] == "string":
-            execute(2, i[1].split(",")[0], i[1].split(",")[1])
-        elif i[0] == "int":
-            execute(3, i[1].split(",")[0], i[1].split(",")[1])
-        elif i[0] == "sum":
-            execute(4, i[1].split(",")[0], i[1].split(",")[1], i[1].split(",")[2])
-        elif i[0] == "sub":
-            execute(5, i[1].split(",")[0], i[1].split(",")[1], i[1].split(",")[2])
-        elif i[0] == "HQ9":
-            execute(10, i[1])
-        elif i[0] == "meminfo":
+        operation = i[0]
+        if operation == "echo":
+            execute(OpCode.ECHO_VAR, i[1])
+        elif operation == "string":
+            execute(OpCode.STORE_STRING, i[1].split(",")[0], i[1].split(",")[1])
+        elif operation == "int":
+            execute(OpCode.STORE_INTEGER, i[1].split(",")[0], i[1].split(",")[1])
+        elif operation == "sum":
+            execute(
+                OpCode.MATH_SUM_VARS,
+                i[1].split(",")[0],
+                i[1].split(",")[1],
+                i[1].split(",")[2],
+            )
+        elif operation == "sub":
+            execute(
+                OpCode.MATH_SUB_VARS,
+                i[1].split(",")[0],
+                i[1].split(",")[1],
+                i[1].split(",")[2],
+            )
+        elif operation == "HQ9":
+            execute(OpCode.H9QP, i[1])
+        elif operation == "meminfo":
             print(memory)
-        elif i[0] == "quine":
+        elif operation == "quine":
             f = open(file_ptr, "r", encoding="utf-8")
             print(f.read())
             f.close
-        elif i[0] == "suicide":
+        elif operation == "suicide":
             suicide()
         else:
-            err(f"Инструкция: {i[0]}, не распознанна")
+            err(f"Инструкция: {operation}, не распознанна")
 
 
 # Обработка аргументов
