@@ -1,16 +1,111 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import typing
 from enum import Enum, auto
 
 
 class OpCode(Enum):
+    """
+    Тип инструкции (operation code) для интерпретатора.
+    """
+
     ECHO_VAR = auto()  # Вывести переменную из памяти.
     STORE_STRING = auto()  # Сохранить строку в память.
     STORE_INTEGER = auto()  # Положить число в память.
     MATH_SUM_VARS = auto()  # Сложить три числовых переменных.
     MATH_SUB_VARS = auto()  # Вычесть три числовых переменных.
     H9QP = auto()  # ...
+    MEMORY_INFO = auto()  # ...
+    QUINE = auto()  # ...
+
+
+class Operation:
+    """
+    Инструкция (операция).
+    """
+
+    # Код операции.
+    opcode: OpCode
+
+    # Операнды.
+    operands: list
+
+    def __init__(self, opcode: OpCode, operands: typing.Optional[typing.List] = None):
+        self.opcode = opcode
+        self.operands = operands if operands is not None else []
+
+
+def lexer_tokenize(filepath: str):
+    """
+    Токенизация, разделение на токены языка.
+    """
+
+    # TODO: Переработка лексера, в частности процесса токенизации, работает плохо.
+    with open(filepath, "r", encoding="utf-8") as f:
+        while True:
+            # Строка из файла
+            line = f.readline()
+
+            # Больше нет строк.
+            if not line:
+                break
+
+            # Пустая строка
+            line = line.strip()
+            if len(line) < 1:
+                continue
+
+            # Комментарий.
+            if line.startswith("#"):
+                continue
+
+            yield line.split(":")
+
+
+def parser_parse(optokens: typing.List[str]):
+    """
+    Парсинг, приведение *токенов* языка после токенизации к операции с явно указанными операндами.
+    """
+    for optoken in optokens:
+        # optoken -> кортеж операции после токенизации.
+
+        # Сама операция (строка пользователя).
+        operation = optoken[0]
+        if len(optoken) < 2:
+            err("Недостаточно операндов! (Вы забыли `:`?)")
+        raw_operand_str = optoken[1]
+        operands = raw_operand_str.split(",")
+
+        if operation == "echo":
+            yield Operation(OpCode.ECHO_VAR, [raw_operand_str])
+        elif operation == "string":
+            yield Operation(OpCode.STORE_STRING, [operands[0], operands[1]])
+        elif operation == "int":
+            yield Operation(OpCode.STORE_INTEGER, [operands[0], operands[1]])
+        elif operation == "sum":
+            yield Operation(
+                OpCode.MATH_SUM_VARS, [operands[0], operands[1], operands[2]]
+            )
+        elif operation == "sub":
+            yield Operation(
+                OpCode.MATH_SUB_VARS, [operands[0], operands[1], operands[2]]
+            )
+        elif operation == "HQ9":
+            yield Operation(OpCode.H9QP, [raw_operand_str])
+        elif operation == "meminfo":
+            yield Operation(OpCode.MEMORY_INFO)
+        elif operation == "quine":
+            yield Operation(OpCode.QUINE)
+        elif operation == "suicide":
+            yield Operation(OpCode.SUICIDE)
+        else:
+            err(f"Не удалось распознать инструкцию: `{operation}`!")
+
+
+def run_operations_interpreter(operations: typing.List[Operation]):
+    for operation in operations:
+        execute_operation(operation)
 
 
 # Память в режиме интерпретации - словарь из переменных
@@ -77,141 +172,120 @@ def err(message):
 
 
 # Выполнение команд с аргументами
-def execute(command, param1=None, param2=None, param3=None):
-    if command == OpCode.ECHO_VAR:
-        if param1 in memory.keys():
-            print(memory.get(param1)["data"])
-    elif command == OpCode.STORE_STRING:
-        if param1 in memory.keys():
-            if memory.get(param1)["type"] == "str":
-                print(param1, param2)  # Имя переменной  # Данные переменной
-                memory.get(param1)["data"] = param2
-            else:
-                err(f"Типы данных не соответствуют: {param2}[{type(param2)}] и string")
-        else:
-            memory.update(dict.fromkeys([param1], {"type": "str", "data": param2}))
-    elif command == OpCode.STORE_INTEGER:
-        if param1 in memory.keys():
-            if memory.get(param1)["type"] == "int":
-                print(param1, param2)  # Имя переменной  # Данные переменной
-                memory.get(param1)["data"] = param2
-            else:
-                err(f"Типы данных не соответствуют: {param2}[{type(param2)}] и int")
-        else:
-            memory.update(dict.fromkeys([param1], {"type": "int", "data": param2}))
-    elif command == OpCode.MATH_SUM_VARS:
-        if (
-            param1 in memory.keys()
-            and param2 in memory.keys()
-            and param3 in memory.keys()
-        ):
-            if (
-                memory.get(param1)["type"] == "int"
-                and memory.get(param2)["type"] == "int"
-                and memory.get(param3)["type"] == "int"
-            ):
-                # param1 = param2 +  param3
-                memory.get(param1)["data"] = int(memory.get(param2)["data"]) + int(
-                    memory.get(param3)["data"]
-                )
+def execute_operation(operation: Operation):
+    opcode = operation.opcode
+    if opcode == OpCode.ECHO_VAR:
+        if len(operation.operands) < 1:
+            err("Недостаточно аргументов для ECHO_VAR!")
+        operand_a = operation.operands[0]
+        if operand_a in memory.keys():
+            print(memory.get(operand_a)["data"])
+    elif opcode == OpCode.STORE_STRING:
+        if len(operation.operands) < 2:
+            err("Недостаточно аргументов для STORE_STRING!")
+        operand_a = operation.operands[0]
+        operand_b = operation.operands[1]
+        if operand_a in memory.keys():
+            if memory.get(operand_a)["type"] == "str":
+                print(operand_a, operand_b)  # Имя переменной  # Данные переменной
+                memory.get(operand_a)["data"] = operand_b
             else:
                 err(
-                    f"Типы данных не соответствуют: {memory.get(param1)['type']}, {memory.get(param2)['type']}, {memory.get(param3)['type']}"
+                    f"Типы данных не соответствуют: {operand_b}[{type(operand_b)}] и string"
                 )
         else:
-            err(f"Переменные не найдены: {param1}, {param2}, {param3}")
-    elif command == OpCode.MATH_SUB_VARS:
-        if (
-            param1 in memory.keys()
-            and param2 in memory.keys()
-            and param3 in memory.keys()
-        ):
-            if (
-                memory.get(param1)["type"] == "int"
-                and memory.get(param2)["type"] == "int"
-                and memory.get(param3)["type"] == "int"
-            ):
-                # param1 = param2 - param3
-                memory.get(param1)["data"] = int(memory.get(param2)["data"]) - int(
-                    memory.get(param3)["data"]
-                )
+            memory.update(
+                dict.fromkeys([operand_a], {"type": "str", "data": operand_b})
+            )
+    elif opcode == OpCode.STORE_INTEGER:
+        if len(operation.operands) < 2:
+            err("Недостаточно аргументов для STORE_INTEGER!")
+        operand_a = operation.operands[0]
+        operand_b = operation.operands[1]
+        if operand_a in memory.keys():
+            if memory.get(operand_a)["type"] == "int":
+                print(operand_a, operand_b)  # Имя переменной  # Данные переменной
+                memory.get(operand_a)["data"] = operand_b
             else:
                 err(
-                    f"Типы данных не соответствуют: {memory.get(param1)['type']}, {memory.get(param2)['type']}, {memory.get(param3)['type']}"
+                    f"Типы данных не соответствуют: {operand_b}[{type(operand_b)}] и int"
                 )
         else:
-            err(f"Переменные не найдены: {param1}, {param2}, {param3}")
-    elif command == OpCode.H9QP:
-        for i in param1:
+            memory.update(
+                dict.fromkeys([operand_a], {"type": "int", "data": operand_b})
+            )
+    elif opcode == OpCode.MATH_SUM_VARS:
+        if len(operation.operands) < 3:
+            err("Недостаточно аргументов для MATH_SUM_VARS!")
+        operand_a = operation.operands[0]
+        operand_b = operation.operands[1]
+        operand_c = operation.operands[2]
+        if (
+            operand_a in memory.keys()
+            and operand_b in memory.keys()
+            and operand_c in memory.keys()
+        ):
+            if (
+                memory.get(operand_a)["type"] == "int"
+                and memory.get(operand_b)["type"] == "int"
+                and memory.get(operand_c)["type"] == "int"
+            ):
+                # operand_a = operand_b +  operand_c
+                memory.get(operand_a)["data"] = int(
+                    memory.get(operand_b)["data"]
+                ) + int(memory.get(operand_c)["data"])
+            else:
+                err(
+                    f"Типы данных не соответствуют: {memory.get(operand_a)['type']}, {memory.get(operand_b)['type']}, {memory.get(operand_c)['type']}"
+                )
+        else:
+            err(f"Переменные не найдены: {operand_a}, {operand_b}, {operand_c}")
+    elif opcode == OpCode.MATH_SUB_VARS:
+        if len(operation.operands) < 3:
+            err("Недостаточно аргументов для MATH_SUB_VARS!")
+        operand_a = operation.operands[0]
+        operand_b = operation.operands[1]
+        operand_c = operation.operands[2]
+        if (
+            operand_a in memory.keys()
+            and operand_b in memory.keys()
+            and operand_c in memory.keys()
+        ):
+            if (
+                memory.get(operand_a)["type"] == "int"
+                and memory.get(operand_b)["type"] == "int"
+                and memory.get(operand_c)["type"] == "int"
+            ):
+                # operand_a = operand_b - operand_c
+                memory.get(operand_a)["data"] = int(
+                    memory.get(operand_b)["data"]
+                ) - int(memory.get(operand_c)["data"])
+            else:
+                err(
+                    f"Типы данных не соответствуют: {memory.get(operand_a)['type']}, {memory.get(operand_b)['type']}, {memory.get(operand_c)['type']}"
+                )
+        else:
+            err(f"Переменные не найдены: {operand_a}, {operand_b}, {operand_c}")
+    elif opcode == OpCode.H9QP:
+        if len(operation.operands) < 1:
+            err("Недостаточно аргументов для H9QP!")
+        operand_a = operation.operands[0]
+        for i in operand_a:
             if i == "H":
                 print("Hello World!")
             elif i == "Q":
-                print(param1)
+                print(operand_a)
             elif i == "9":
                 print(_99bottles())
-
-
-# Парсинг
-def parse(file):
-    f = open(file, "r", encoding="utf-8")
-    programm_raw = []
-
-    while True:
-        # считываем строку
-        line = f.readline()
-
-        # Прерываем цикл, если читать нечего
-        if not line:
-            f.close
-            break
-
-        # Если строка не содержит ничего - пропускаем
-        if len(line.strip()) < 1:
-            continue
-
-        # Если строка не содержит комментарий - добавляем её в список
-        if line.strip()[0] != "#":
-            programm_raw.append(line.strip().split(":"))
-
-    return programm_raw
-
-
-# Анализ команд
-def analyze(data):
-    for i in data:
-        operation = i[0]
-        if operation == "echo":
-            execute(OpCode.ECHO_VAR, i[1])
-        elif operation == "string":
-            execute(OpCode.STORE_STRING, i[1].split(",")[0], i[1].split(",")[1])
-        elif operation == "int":
-            execute(OpCode.STORE_INTEGER, i[1].split(",")[0], i[1].split(",")[1])
-        elif operation == "sum":
-            execute(
-                OpCode.MATH_SUM_VARS,
-                i[1].split(",")[0],
-                i[1].split(",")[1],
-                i[1].split(",")[2],
-            )
-        elif operation == "sub":
-            execute(
-                OpCode.MATH_SUB_VARS,
-                i[1].split(",")[0],
-                i[1].split(",")[1],
-                i[1].split(",")[2],
-            )
-        elif operation == "HQ9":
-            execute(OpCode.H9QP, i[1])
-        elif operation == "meminfo":
-            print(memory)
-        elif operation == "quine":
-            f = open(file_ptr, "r", encoding="utf-8")
+    elif opcode == OpCode.MEMORY_INFO:
+        print(memory)
+    elif opcode == OpCode.QUINE:
+        with open(file_ptr, "r", encoding="utf-8") as f:
             print(f.read())
-            f.close
-        elif operation == "suicide":
-            suicide()
-        else:
-            err(f"Инструкция: {operation}, не распознанна")
+    elif opcode == OpCode.SUICIDE:
+        suicide()
+    else:
+        err(f"Ошибка на стороне парсера! Получен неизвестный opcode `{opcode}`!")
 
 
 # Обработка аргументов
@@ -219,4 +293,11 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         for i in range(1, len(sys.argv)):
             file_ptr = sys.argv[i]
-            analyze(parse(file_ptr))
+
+            print(f"Токенизирую файл `{file_ptr}` !")
+            tokens = lexer_tokenize(file_ptr)
+            print(f"Парсинга файла...")
+            operations = parser_parse(tokens)
+            print(f"Начинаю исполнять операции...")
+            print(f"Вывод: \n")
+            run_operations_interpreter(operations)
